@@ -1,0 +1,63 @@
+# 1. Set the deployment mode to 'SingleBinary' (monolithic)
+deploymentMode: SingleBinary
+
+loki:
+  # 2. Tell Loki to use the filesystem
+  storage:
+    type: 'filesystem'
+    
+    # --- THIS IS THE FIX ---
+    # Provide dummy bucketNames to satisfy the Helm template,
+    # even though we are using 'filesystem'.
+    bucketNames:
+      chunks: chunks
+      ruler: ruler
+      admin: admin
+    # --- END FIX ---
+
+  # 3. Required schema for filesystem
+  schemaConfig:
+    configs:
+    - from: "2024-04-01"
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: loki_index_
+        period: 24h
+        
+  commonConfig:
+    replication_factor: 1
+  
+  auth_enabled: false
+
+# 4. Configure persistence for the 'SingleBinary' pod
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    # Use 'standard' for Minikube (not 'gp2')
+    storageClass: standard
+    size: 5Gi
+
+# 5. Explicitly disable Minio
+minio:
+  enabled: false
+
+# 6. Explicitly zero-out all other modes
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+
+# 7. Enable the Promtail agent
+promtail:
+  enabled: true
+
+# --- FIX FOR PENDING POD ---
+# The default chunks cache is too big for Minikube.
+# We'll set it to 500MB instead.
+chunksCache:
+  allocatedMemory: 500

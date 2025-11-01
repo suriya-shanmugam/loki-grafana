@@ -1,0 +1,10 @@
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+    - name: Loki (Minikube)
+      type: loki
+      # This is the internal Kubernetes DNS name for our Loki gateway
+      url: http://loki-gateway.loki.svc.cluster.local
+      access: proxy
+      isDefault: true

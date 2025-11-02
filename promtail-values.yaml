@@ -2,10 +2,39 @@ config:
   clients:
     - url: http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push
 
-  # This merges into all existing scrape jobs
   snippets:
+
     extraRelabelConfigs:
-      # Drop logs from the 'loki' namespace
       - source_labels: ['__meta_kubernetes_namespace']
         regex: 'kube-system|grafana|kube-node-lease|kube-public|loki'
         action: drop
+
+    pipelineStages:
+      - json:
+          expressions:
+            log: log
+            stream: stream
+            time: time
+
+      - json:
+          source: log
+          expressions:
+            asctime: asctime
+            levelname: levelname
+            name: name
+            message: message
+            trace_id: trace_id
+            user_id: user_id
+            component: component
+
+      - timestamp:
+          source: asctime
+          format: "2006-01-02 15:04:05,000"
+
+      - labels:
+          level: levelname
+          component: component
+          trace_id: trace_id
+
+      - output:
+          source: message
